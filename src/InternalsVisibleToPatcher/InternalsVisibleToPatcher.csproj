@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
     <PackageId>InternalsVisibleToPatcher</PackageId>
     <AssemblyName>InternalsVisibleToPatcher</AssemblyName>
-    <Version>0.9.0</Version>
+    <Version>0.9.1</Version>
     <DevelopmentDependency>true</DevelopmentDependency>
     <Authors>PhyxionNL</Authors>
     <RepositoryUrl>https://github.com/PhyxionNL/InternalsVisibleToPatcher</RepositoryUrl>
