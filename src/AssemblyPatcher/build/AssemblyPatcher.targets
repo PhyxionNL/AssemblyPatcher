@@ -1,0 +1,67 @@
+<Project>
+  <PropertyGroup>
+    <AssemblyPatcher_TargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">netstandard2.0</AssemblyPatcher_TargetFramework>
+    <AssemblyPatcher_TargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">net462</AssemblyPatcher_TargetFramework>
+    <AssemblyPatcher_Assembly>$(MSBuildThisFileDirectory)../tools/$(AssemblyPatcher_TargetFramework)/AssemblyPatcher.dll</AssemblyPatcher_Assembly>
+    <AssemblyPatcher_IntermediatePath>$(IntermediateOutputPath)/AssemblyPatcher</AssemblyPatcher_IntermediatePath>
+    <AssemblyPatcher_ManifestFilePath>$(AssemblyPatcher_IntermediatePath)/AssemblyPatcher.manifest</AssemblyPatcher_ManifestFilePath>
+  </PropertyGroup>
+
+  <UsingTask AssemblyFile="$(AssemblyPatcher_Assembly)" TaskName="AssemblyPatcher.PatcherTask" />
+
+  <Target Name="GetAssemblyPatcherReferencePaths"
+          Inputs="$(MSBuildAllProjects)"
+          Outputs="$(AssemblyPatcher_ManifestFilePath)"
+          Returns="@(AssemblyPatcher_InputReferencePath);@(AssemblyPatcher_OutputReferencePath)">
+    <ItemGroup>
+      <AssemblyPatcher_ReferencePathJoin Include="@(ReferencePath)" AddInternalsVisibleTo="%(AddInternalsVisibleTo.Identity)" RemoveSealed="%(RemoveSealed.Identity)" />
+      <AssemblyPatcher_InputReferencePath Include="@(AssemblyPatcher_ReferencePathJoin)" Condition=" '%(Filename)' == '%(AddInternalsVisibleTo)' Or '%(Filename)' == '%(RemoveSealed)' " />
+      <AssemblyPatcher_ReferencePathJoin Remove="@(AssemblyPatcher_ReferencePathJoin)" />
+      <AssemblyPatcher_OutputReferencePath Include="@(AssemblyPatcher_InputReferencePath->'$(AssemblyPatcher_IntermediatePath)/%(Filename)%(Extension)')" OriginalItemSpec="%(Identity)" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(AssemblyPatcher_ManifestFilePath)" Lines="@(AssemblyPatcher_InputReferencePath)" WriteOnlyWhenDifferent="true" Overwrite="true" />
+  </Target>
+
+  <Target Name="PatchAssemblies"
+          DependsOnTargets="GetAssemblyPatcherReferencePaths"
+          AfterTargets="AfterResolveReferences"
+          Inputs="@(AssemblyPatcher_InputReferencePath);$(AssemblyPatcher_ManifestFilePath)"
+          Outputs="@(AssemblyPatcher_OutputReferencePath)"
+          Returns="@(ReferencePath)">
+    <PatcherTask SourceReferences="@(ReferencePath)"
+                 AssemblyNames="@(AddInternalsVisibleTo)"
+                 AttributeAssemblyNames="@(AddInternalsVisibleTo->'%(AssemblyName)')"
+                 RemoveSealed="@(RemoveSealed)"
+                 IntermediateOutputPath="$(AssemblyPatcher_IntermediatePath)" />
+    <ItemGroup>
+      <ReferencePath Include="@(AssemblyPatcher_OutputReferencePath)" />
+      <ReferencePath Remove="@(AssemblyPatcher_OutputReferencePath->'%(OriginalItemSpec)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyPatchedAssembliesToOutput"
+          DependsOnTargets="PatchAssemblies"
+          AfterTargets="CopyFilesToOutputDirectory">
+    <Copy SourceFiles="@(AssemblyPatcher_OutputReferencePath)"
+          DestinationFiles="@(AssemblyPatcher_InputReferencePath->'$(OutputPath)%(Filename)%(Extension)')"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False" />
+  </Target>
+
+  <Target Name="CopyPatchedAssembliesToPublish"
+          DependsOnTargets="PatchAssemblies"
+          AfterTargets="Publish">
+    <Copy SourceFiles="@(AssemblyPatcher_OutputReferencePath)"
+          DestinationFiles="@(AssemblyPatcher_InputReferencePath->'$(PublishDir)%(Filename)%(Extension)')"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False" />
+  </Target>
+
+  <Target Name="AssemblyPatcherClean" AfterTargets="Clean">
+    <ItemGroup>
+      <AssemblyPatcher_Directory Include="$(AssemblyPatcher_IntermediatePath)" />
+    </ItemGroup>
+    <RemoveDir Directories="@(AssemblyPatcher_Directory)" />
+  </Target>
+
+</Project>

@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <PackageId>AssemblyPatcher</PackageId>
+    <AssemblyName>AssemblyPatcher</AssemblyName>
+    <Version>1.0.0</Version>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <Authors>PhyxionNL</Authors>
+    <RepositoryUrl>https://github.com/PhyxionNL/AssemblyPatcher</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>Adds InternalsVisibleTo attributes or removes sealed modifiers from an existing assembly.</Description>
+    <PackageTags>InternalsVisibleTo;sealed</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <BuildOutputTargetFolder>tools/$(TargetFramework)</BuildOutputTargetFolder>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludePackageDependencies</TargetsForTfmSpecificBuildOutput>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="build\*" PackagePath="build" /> 
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="True" PackagePath="" Visible="False" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="dnlib" Version="4.5.0" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="18.0.2" />
+  </ItemGroup>
+
+  <Target Name="IncludePackageDependencies">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferencePath)" Condition=" '%(Filename)' == 'dnlib' " />
+    </ItemGroup>
+  </Target>
+
+</Project>
