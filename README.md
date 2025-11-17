@@ -1,6 +1,6 @@
 # AssemblyPatcher
 
-An MSBuild task that adds [InternalsVisibleTo](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.internalsvisibletoattribute) attributes or removes sealed modifiers from an existing assembly.
+An MSBuild task that adds [InternalsVisibleTo](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.internalsvisibletoattribute) attributes or removes sealed modifiers from existing assemblies.
 
 # Usage
 First add the [NuGet package](https://www.nuget.org/packages/AssemblyPatcher) to your project:
