@@ -11,16 +11,14 @@ First add the [NuGet package](https://www.nuget.org/packages/AssemblyPatcher) to
 </PackageReference>
 ```
 
-Then define an ItemGroup with the following:
+To add an ```InternalsVisibleToAttribute``` to ```SomeAssembly``` with ```OwnAssembly``` as assembly name, define an ```ItemGroup``` with the following:
 ```xml
 <ItemGroup>
    <AddInternalsVisibleTo Include="SomeAssembly" AssemblyName="OwnAssembly" />
 </ItemGroup>
 ```
 
-This will add an InternalsVisibleToAttribute to SomeAssembly with OwnAssembly as assembly name.
-
-You can also remove sealed modifiers from assembly types like this:
+To remove sealed modifiers from all types in ```SomeAssembly```, define an ```ItemGroup``` with the following:
 ```xml
 <ItemGroup>
    <RemoveSealed Include="SomeAssembly" />
