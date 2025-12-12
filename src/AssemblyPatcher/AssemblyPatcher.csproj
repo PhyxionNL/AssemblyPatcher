@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
     <PackageId>AssemblyPatcher</PackageId>
     <AssemblyName>AssemblyPatcher</AssemblyName>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <DevelopmentDependency>true</DevelopmentDependency>
     <Authors>PhyxionNL</Authors>
     <RepositoryUrl>https://github.com/PhyxionNL/AssemblyPatcher/</RepositoryUrl>

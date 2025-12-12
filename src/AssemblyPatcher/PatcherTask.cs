@@ -143,43 +143,10 @@ public class PatcherTask : Task
         Func<string, bool> matches = CreateMatcher(memberNames);
         int count = 0;
 
-        foreach (TypeDef type in module.GetTypes())
+        foreach (MethodDef method in GetMatchingMethods(module, matches))
         {
-            // Methods.
-            foreach (MethodDef method in type.Methods)
-            {
-                if (matches(method.DeclaringType.FullName + "::" + method.Name) && MakeMethodVirtual(method))
-                    count++;
-            }
-
-            // Properties.
-            foreach (PropertyDef prop in type.Properties)
-            {
-                if (matches(prop.DeclaringType.FullName + "::" + prop.Name))
-                {
-                    if (MakeMethodVirtual(prop.GetMethod))
-                        count++;
-
-                    if (MakeMethodVirtual(prop.SetMethod))
-                        count++;
-                }
-            }
-
-            // Events.
-            foreach (EventDef evt in type.Events)
-            {
-                if (matches(evt.DeclaringType.FullName + "::" + evt.Name))
-                {
-                    if (MakeMethodVirtual(evt.AddMethod))
-                        count++;
-
-                    if (MakeMethodVirtual(evt.RemoveMethod))
-                        count++;
-
-                    if (MakeMethodVirtual(evt.InvokeMethod))
-                        count++;
-                }
-            }
+            if (MakeMethodVirtual(method))
+                count++;
         }
 
         if (count > 0)
@@ -191,43 +158,10 @@ public class PatcherTask : Task
         Func<string, bool> matches = CreateMatcher(memberNames);
         int count = 0;
 
-        foreach (TypeDef type in module.GetTypes())
+        foreach (MethodDef method in GetMatchingMethods(module, matches))
         {
-            // Methods.
-            foreach (MethodDef method in type.Methods)
-            {
-                if (matches(method.DeclaringType.FullName + "::" + method.Name) && MakeMethodPublic(method))
-                    count++;
-            }
-
-            // Properties.
-            foreach (PropertyDef prop in type.Properties)
-            {
-                if (matches(prop.DeclaringType.FullName + "::" + prop.Name))
-                {
-                    if (MakeMethodPublic(prop.GetMethod))
-                        count++;
-
-                    if (MakeMethodPublic(prop.SetMethod))
-                        count++;
-                }
-            }
-
-            // Events.
-            foreach (EventDef evt in type.Events)
-            {
-                if (matches(evt.DeclaringType.FullName + "::" + evt.Name))
-                {
-                    if (MakeMethodPublic(evt.AddMethod))
-                        count++;
-
-                    if (MakeMethodPublic(evt.RemoveMethod))
-                        count++;
-
-                    if (MakeMethodPublic(evt.InvokeMethod))
-                        count++;
-                }
-            }
+            if (MakeMethodPublic(method))
+                count++;
         }
 
         if (count > 0)
@@ -266,16 +200,56 @@ public class PatcherTask : Task
 
     private static Func<string, bool> CreateMatcher(string patternsInput)
     {
-        string[] patterns = (patternsInput ?? "*").Split([';'], StringSplitOptions.RemoveEmptyEntries)
-                                                  .Select(x => x.Trim()).ToArray();
+        string[] patterns = [.. (patternsInput ?? "*").Split([';'], StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim())];
 
-        Regex[] regexes = patterns.Select(x =>
-        {
+        Regex[] regexes = [.. patterns.Select(x => {
             string escaped = Regex.Escape(x).Replace("\\*", ".*");
             return new Regex($"^{escaped}$");
-        }).ToArray();
+        })];
 
         return value => regexes.Any(r => r.IsMatch(value));
+    }
+
+    private static IEnumerable<MethodDef> GetMatchingMethods(ModuleDefMD module, Func<string, bool> matches)
+    {
+        foreach (TypeDef type in module.GetTypes())
+        {
+            // Methods.
+            foreach (MethodDef method in type.Methods)
+            {
+                if (matches(method.DeclaringType.FullName + "::" + method.Name))
+                    yield return method;
+            }
+
+            // Properties.
+            foreach (PropertyDef prop in type.Properties)
+            {
+                if (matches(prop.DeclaringType.FullName + "::" + prop.Name))
+                {
+                    if (prop.GetMethod != null)
+                        yield return prop.GetMethod;
+
+                    if (prop.SetMethod != null)
+                        yield return prop.SetMethod;
+                }
+            }
+
+            // Events.
+            foreach (EventDef evt in type.Events)
+            {
+                if (matches(evt.DeclaringType.FullName + "::" + evt.Name))
+                {
+                    if (evt.AddMethod != null)
+                        yield return evt.AddMethod;
+
+                    if (evt.RemoveMethod != null)
+                        yield return evt.RemoveMethod;
+
+                    if (evt.InvokeMethod != null)
+                        yield return evt.InvokeMethod;
+                }
+            }
+        }
     }
 
     private static string GetFullFilePath(string basePath, string path) => Path.IsPathRooted(path) ? Path.GetFullPath(path) : Path.Combine(basePath, path);
