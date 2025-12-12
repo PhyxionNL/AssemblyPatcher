@@ -48,7 +48,10 @@ public class PatcherTask : Task
         {
             ITaskItem assembly = SourceReferences.FirstOrDefault(x => Path.GetFileNameWithoutExtension(GetFullFilePath(IntermediateOutputPath, x.ItemSpec)) == target);
             if (assembly == null)
+            {
+                Log.LogMessage(MessageImportance.Low, $"Assembly '{target}' not found in source references. Skipping.");
                 continue;
+            }
 
             string assemblyPath = GetFullFilePath(IntermediateOutputPath, assembly.ItemSpec);
             string targetAssemblyPath = Path.Combine(IntermediateOutputPath, Path.GetFileName(assemblyPath));
@@ -86,6 +89,7 @@ public class PatcherTask : Task
             }
 
             module.Write(targetAssemblyPath);
+            module.Dispose();
         }
 
         return true;
@@ -107,7 +111,7 @@ public class PatcherTask : Task
         Func<string, bool> matches = CreateMatcher(typeNames);
         int count = 0;
 
-        foreach (TypeDef type in module.Types)
+        foreach (TypeDef type in module.GetTypes())
         {
             if (type.IsSealed && matches(type.FullName))
             {
@@ -116,7 +120,8 @@ public class PatcherTask : Task
             }
         }
 
-        Log.LogMessage(MessageImportance.Normal, $"Removed 'sealed' from {count} types in '{targetAssemblyPath}' matching patterns: {typeNames}");
+        if (count > 0)
+            Log.LogMessage(MessageImportance.Normal, $"Removed 'sealed' from {count} types in '{targetAssemblyPath}' matching patterns: {typeNames}");
     }
 
     private void AddVirtualToMembers(ModuleDefMD module, string targetAssemblyPath, string memberNames)
@@ -124,13 +129,13 @@ public class PatcherTask : Task
         Func<string, bool> matches = CreateMatcher(memberNames);
         int count = 0;
 
-        foreach (TypeDef type in module.Types)
+        foreach (TypeDef type in module.GetTypes())
         {
             // Methods.
             foreach (MethodDef method in type.Methods)
             {
-                if (matches(method.DeclaringType.FullName + "::" + method.Name))
-                    MakeVirtual(method);
+                if (matches(method.DeclaringType.FullName + "::" + method.Name) && MakeVirtual(method))
+                    count++;
             }
 
             // Properties.
@@ -138,8 +143,11 @@ public class PatcherTask : Task
             {
                 if (matches(prop.DeclaringType.FullName + "::" + prop.Name))
                 {
-                    MakeVirtual(prop.GetMethod);
-                    MakeVirtual(prop.SetMethod);
+                    if (MakeVirtual(prop.GetMethod)) 
+                        count++;
+
+                    if (MakeVirtual(prop.SetMethod)) 
+                        count++;
                 }
             }
 
@@ -148,24 +156,32 @@ public class PatcherTask : Task
             {
                 if (matches(evt.DeclaringType.FullName + "::" + evt.Name))
                 {
-                    MakeVirtual(evt.AddMethod);
-                    MakeVirtual(evt.RemoveMethod);
-                    MakeVirtual(evt.InvokeMethod);
+                    if (MakeVirtual(evt.AddMethod)) 
+                        count++;
+
+                    if (MakeVirtual(evt.RemoveMethod))
+                        count++;
+
+                    if (MakeVirtual(evt.InvokeMethod)) 
+                        count++;
                 }
             }
         }
 
-        void MakeVirtual(MethodDef method)
+        if (count > 0)
+            Log.LogMessage(MessageImportance.Normal, $"Added 'virtual' to {count} members in '{targetAssemblyPath}' matching patterns: {memberNames}");
+    }
+
+    private static bool MakeVirtual(MethodDef method)
+    {
+        if (method is { IsVirtual: false, IsStatic: false, IsFinal: true, IsConstructor: false, IsAbstract: false, IsPrivate: false })
         {
-            if (method is { IsVirtual: false, IsStatic: false, IsConstructor: false, IsAbstract: false, IsPrivate: false })
-            {
-                method.Attributes |= MethodAttributes.Virtual;
-                method.Attributes &= ~MethodAttributes.Final;
-                count++;
-            }
+            method.IsVirtual = true;
+            method.IsFinal = false;
+            return true;
         }
 
-        Log.LogMessage(MessageImportance.Normal, $"Added 'virtual' to {count} members in '{targetAssemblyPath}' matching patterns: {memberNames}");
+        return false;
     }
 
     private static Func<string, bool> CreateMatcher(string patternsInput)
