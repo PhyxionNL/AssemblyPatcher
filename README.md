@@ -37,7 +37,7 @@ Add `virtual` keywords in `SomeAssembly`:
 <ItemGroup>
    <AddVirtualTo Include="SomeAssembly" />
    <!-- or filtered -->
-   <AddVirtualTo Include="SomeAssembly" MemberNames="SomeAssembly.TypeA;SomeAssembly.Types::Member*" />
+   <AddVirtualTo Include="SomeAssembly" MemberNames="SomeAssembly.Types::Member*" />
 </ItemGroup>
 ```
 
@@ -47,7 +47,8 @@ Change access modifiers to `public` in `SomeAssembly`:
 <ItemGroup>
    <MakePublic Include="SomeAssembly" />
    <!-- or filtered -->
-   <MakePublic Include="SomeAssembly" MemberNames="SomeAssembly.TypeA;SomeAssembly.Types::Member*" />
+   <MakePublic Include="SomeAssembly" MemberNames="SomeAssembly.Types::Member*" />
+   <MakePublic Include="SomeAssembly" TypeNames="SomeAssembly.TypeA" />
 </ItemGroup>
 ```
 

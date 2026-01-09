@@ -93,13 +93,16 @@ public class PatcherTask : Task
                 }
             }
 
-            // Make members public.
+            // Make types and members public.
             if (MakePublic != null)
             {
                 foreach (ITaskItem item in MakePublic.Where(x => x.ItemSpec == target))
                 {
                     string memberNames = item.GetMetadata("MemberNames");
                     MakeMembersPublic(module, targetAssemblyPath, memberNames);
+
+                    string typeNames = item.GetMetadata("TypeNames");
+                    MakeTypesPublic(module, targetAssemblyPath, typeNames);
                 }
             }
 
@@ -168,6 +171,36 @@ public class PatcherTask : Task
             Log.LogMessage(MessageImportance.Normal, $"Made {count} members public in '{targetAssemblyPath}' matching patterns: {memberNames}");
     }
 
+    private void MakeTypesPublic(ModuleDefMD module, string targetAssemblyPath, string typeNames)
+    {
+        Func<string, bool> matches = CreateMatcher(typeNames);
+        int count = 0;
+
+        foreach (TypeDef type in module.GetTypes())
+        {
+            bool isMatch = matches(type.FullName);
+            if (!isMatch)
+                continue;
+
+            // Already public?
+            if (type.IsPublic || type.IsNestedPublic)
+                continue;
+
+            // Clear existing visibility bits and set to public or nested public.
+            type.Attributes &= ~TypeAttributes.VisibilityMask;
+
+            if (type.IsNested)
+                type.Attributes |= TypeAttributes.NestedPublic;
+            else
+                type.Attributes |= TypeAttributes.Public;
+
+            count++;
+        }
+
+        if (count > 0)
+            Log.LogMessage(MessageImportance.Normal, $"Made {count} types public in '{targetAssemblyPath}' matching patterns: {typeNames}");
+    }
+
     private static bool MakeMethodVirtual(MethodDef method)
     {
         if (method is { IsVirtual: false, IsStatic: false, IsConstructor: false, IsAbstract: false, IsPrivate: false })
@@ -200,7 +233,10 @@ public class PatcherTask : Task
 
     private static Func<string, bool> CreateMatcher(string patternsInput)
     {
-        string[] patterns = [.. (patternsInput ?? "*").Split([';'], StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim())];
+        if (string.IsNullOrWhiteSpace(patternsInput))
+            patternsInput = "*";
+
+        string[] patterns = [.. patternsInput.Split([';'], StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim())];
 
         Regex[] regexes = [.. patterns.Select(x => {
             string escaped = Regex.Escape(x).Replace("\\*", ".*");

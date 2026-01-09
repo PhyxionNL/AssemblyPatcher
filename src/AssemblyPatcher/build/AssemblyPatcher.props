@@ -15,6 +15,7 @@
     <MakePublic>
       <Visible>False</Visible>
       <MemberNames></MemberNames>
+      <TypeNames></TypeNames>
     </MakePublic>
   </ItemDefinitionGroup>
 </Project>
