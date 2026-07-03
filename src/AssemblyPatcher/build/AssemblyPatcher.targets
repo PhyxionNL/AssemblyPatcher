@@ -5,6 +5,7 @@
     <AssemblyPatcher_Assembly>$(MSBuildThisFileDirectory)../tools/$(AssemblyPatcher_TargetFramework)/AssemblyPatcher.dll</AssemblyPatcher_Assembly>
     <AssemblyPatcher_IntermediatePath>$(IntermediateOutputPath)/AssemblyPatcher</AssemblyPatcher_IntermediatePath>
     <AssemblyPatcher_ManifestFilePath>$(AssemblyPatcher_IntermediatePath)/AssemblyPatcher.manifest</AssemblyPatcher_ManifestFilePath>
+    <AssemblyPatcher_ResolvedFilesManifestFilePath>$(AssemblyPatcher_IntermediatePath)/AssemblyPatcher.resolvedfiles.manifest</AssemblyPatcher_ResolvedFilesManifestFilePath>
   </PropertyGroup>
 
   <UsingTask AssemblyFile="$(AssemblyPatcher_Assembly)" TaskName="AssemblyPatcher.PatcherTask" />
@@ -19,7 +20,7 @@
       <AssemblyPatcher_ReferencePathJoin Remove="@(AssemblyPatcher_ReferencePathJoin)" />
       <AssemblyPatcher_OutputReferencePath Include="@(AssemblyPatcher_InputReferencePath->'$(AssemblyPatcher_IntermediatePath)/%(Filename)%(Extension)')" OriginalItemSpec="%(Identity)" />
     </ItemGroup>
-    
+
     <WriteLinesToFile File="$(AssemblyPatcher_ManifestFilePath)" Lines="@(AssemblyPatcher_InputReferencePath)" WriteOnlyWhenDifferent="true" Overwrite="true" />
   </Target>
 
@@ -51,13 +52,28 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="CopyPatchedAssembliesToPublish"
-          DependsOnTargets="PatchAssemblies"
-          AfterTargets="Publish">
-    <Copy SourceFiles="@(AssemblyPatcher_OutputReferencePath)"
-          DestinationFiles="@(AssemblyPatcher_OutputReferencePath->'$(PublishDir)%(Filename)%(Extension)')"
-          OverwriteReadOnlyFiles="True"
-          SkipUnchangedFiles="False" />
+  <Target Name="GetAssemblyPatcherResolvedFiles"
+          Inputs="$(MSBuildAllProjects)"
+          Outputs="$(AssemblyPatcher_ResolvedFilesManifestFilePath)"
+          Returns="@(AssemblyPatcher_InputResolvedFileToPublish);@(AssemblyPatcher_OutputResolvedFileToPublish)">
+    <ItemGroup>
+      <AssemblyPatcher_ResolvedFileToPublishJoin Include="@(ResolvedFileToPublish)" AddInternalsVisibleTo="%(AddInternalsVisibleTo.Identity)" RemoveSealedFrom="%(RemoveSealedFrom.Identity)" AddVirtualTo="%(AddVirtualTo.Identity)" MakePublic="%(MakePublic.Identity)" />
+      <AssemblyPatcher_InputResolvedFileToPublish Include="@(AssemblyPatcher_ResolvedFileToPublishJoin)" Condition=" '%(Filename)' == '%(AddInternalsVisibleTo)' Or '%(Filename)' == '%(RemoveSealedFrom)' Or '%(Filename)' == '%(AddVirtualTo)' Or '%(Filename)' == '%(MakePublic)' " />
+      <AssemblyPatcher_ResolvedFileToPublishJoin Remove="@(AssemblyPatcher_ResolvedFileToPublishJoin)" />
+      <AssemblyPatcher_OutputResolvedFileToPublish Include="@(AssemblyPatcher_InputResolvedFileToPublish->'$(AssemblyPatcher_IntermediatePath)/%(Filename)%(Extension)')" OriginalItemSpec="%(Identity)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(AssemblyPatcher_ResolvedFilesManifestFilePath)" Lines="@(AssemblyPatcher_InputResolvedFileToPublish)" WriteOnlyWhenDifferent="true" Overwrite="true" />
+  </Target>
+
+  <Target Name="PatchPublishAssemblies"
+          DependsOnTargets="PatchAssemblies;GetAssemblyPatcherResolvedFiles"
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          BeforeTargets="_ComputeResolvedFilesToPublishTypes">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(AssemblyPatcher_OutputResolvedFileToPublish)" />
+      <ResolvedFileToPublish Remove="@(AssemblyPatcher_InputResolvedFileToPublish)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="AssemblyPatcherClean" AfterTargets="Clean">
