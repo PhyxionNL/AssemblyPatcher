@@ -19,6 +19,7 @@
       <AssemblyPatcher_ReferencePathJoin Remove="@(AssemblyPatcher_ReferencePathJoin)" />
       <AssemblyPatcher_OutputReferencePath Include="@(AssemblyPatcher_InputReferencePath->'$(AssemblyPatcher_IntermediatePath)/%(Filename)%(Extension)')" OriginalItemSpec="%(Identity)" />
     </ItemGroup>
+    
     <WriteLinesToFile File="$(AssemblyPatcher_ManifestFilePath)" Lines="@(AssemblyPatcher_InputReferencePath)" WriteOnlyWhenDifferent="true" Overwrite="true" />
   </Target>
 
@@ -38,16 +39,16 @@
     <ItemGroup>
       <ReferencePath Include="@(AssemblyPatcher_OutputReferencePath)" />
       <ReferencePath Remove="@(AssemblyPatcher_OutputReferencePath->'%(OriginalItemSpec)')" />
-    </ItemGroup>
-  </Target>
 
-  <Target Name="CopyPatchedAssembliesToOutput"
-          DependsOnTargets="PatchAssemblies"
-          AfterTargets="CopyFilesToOutputDirectory">
-    <Copy SourceFiles="@(AssemblyPatcher_OutputReferencePath)"
-          DestinationFiles="@(AssemblyPatcher_OutputReferencePath->'$(OutputPath)%(Filename)%(Extension)')"
-          OverwriteReadOnlyFiles="True"
-          SkipUnchangedFiles="False" />
+      <ReferencePathWithRefAssemblies Include="@(AssemblyPatcher_OutputReferencePath)" />
+      <ReferencePathWithRefAssemblies Remove="@(AssemblyPatcher_OutputReferencePath->'%(OriginalItemSpec)')" />
+
+      <ReferenceDependencyPaths Include="@(AssemblyPatcher_OutputReferencePath)" />
+      <ReferenceDependencyPaths Remove="@(AssemblyPatcher_OutputReferencePath->'%(OriginalItemSpec)')" />
+
+      <ReferenceCopyLocalPaths Include="@(AssemblyPatcher_OutputReferencePath)" />
+      <ReferenceCopyLocalPaths Remove="@(AssemblyPatcher_OutputReferencePath->'%(OriginalItemSpec)')" />
+    </ItemGroup>
   </Target>
 
   <Target Name="CopyPatchedAssembliesToPublish"
