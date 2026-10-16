@@ -25,9 +25,9 @@ Remove `sealed` modifiers from types in `SomeAssembly`:
 
 ```xml
 <ItemGroup>
-   <RemoveSealedFrom Include="SomeAssembly" />
+   <MakeUnsealed Include="SomeAssembly" />
    <!-- or filtered -->
-   <RemoveSealedFrom Include="SomeAssembly" TypeNames="SomeAssembly.TypeA;SomeAssembly.Folder.*" />
+   <MakeUnsealed Include="SomeAssembly" TypeNames="SomeAssembly.TypeA;SomeAssembly.Folder.*" />
 </ItemGroup>
 ```
 
@@ -35,9 +35,9 @@ Add `virtual` keywords in `SomeAssembly`:
 
 ```xml
 <ItemGroup>
-   <AddVirtualTo Include="SomeAssembly" />
+   <MakeVirtual Include="SomeAssembly" />
    <!-- or filtered -->
-   <AddVirtualTo Include="SomeAssembly" MemberNames="SomeAssembly.Types::Member*" />
+   <MakeVirtual Include="SomeAssembly" MemberNames="SomeAssembly.Types::Member*" />
 </ItemGroup>
 ```
 

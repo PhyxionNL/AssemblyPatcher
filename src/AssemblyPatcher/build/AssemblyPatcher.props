@@ -4,14 +4,14 @@
       <Visible>False</Visible>
       <AssemblyName></AssemblyName>
     </AddInternalsVisibleTo>
-    <RemoveSealedFrom>
+    <MakeUnsealed>
       <Visible>False</Visible>
       <TypeNames></TypeNames>
-    </RemoveSealedFrom>
-    <AddVirtualTo>
+    </MakeUnsealed>
+    <MakeVirtual>
       <Visible>False</Visible>
       <MemberNames></MemberNames>
-    </AddVirtualTo>
+    </MakeVirtual>
     <MakePublic>
       <Visible>False</Visible>
       <MemberNames></MemberNames>

@@ -11,7 +11,7 @@ namespace AssemblyPatcher;
 
 public class PatcherTask : Task
 {
-    public ITaskItem[] AddVirtualTo { get; set; }
+    public ITaskItem[] MakeVirtual { get; set; }
 
     [Required]
     public ITaskItem[] AssemblyNames { get; set; }
@@ -22,7 +22,7 @@ public class PatcherTask : Task
     [Required]
     public string IntermediateOutputPath { get; set; }
 
-    public ITaskItem[] RemoveSealedFrom { get; set; }
+    public ITaskItem[] MakeUnsealed { get; set; }
 
     [Required]
     public ITaskItem[] SourceReferences { get; set; }
@@ -40,11 +40,11 @@ public class PatcherTask : Task
         if (AssemblyNames != null)
             assemblies.UnionWith(AssemblyNames.Select(a => a.ItemSpec));
 
-        if (RemoveSealedFrom != null)
-            assemblies.UnionWith(RemoveSealedFrom.Select(a => a.ItemSpec));
+        if (MakeUnsealed != null)
+            assemblies.UnionWith(MakeUnsealed.Select(a => a.ItemSpec));
 
-        if (AddVirtualTo != null)
-            assemblies.UnionWith(AddVirtualTo.Select(a => a.ItemSpec));
+        if (MakeVirtual != null)
+            assemblies.UnionWith(MakeVirtual.Select(a => a.ItemSpec));
 
         if (MakePublic != null)
             assemblies.UnionWith(MakePublic.Select(a => a.ItemSpec));
@@ -73,23 +73,23 @@ public class PatcherTask : Task
                 }
             }
 
-            // Remove sealed.
-            if (RemoveSealedFrom != null)
+            // Make unsealed.
+            if (MakeUnsealed != null)
             {
-                foreach (ITaskItem item in RemoveSealedFrom.Where(x => x.ItemSpec == target))
+                foreach (ITaskItem item in MakeUnsealed.Where(x => x.ItemSpec == target))
                 {
                     string typeNames = item.GetMetadata("TypeNames");
-                    RemoveSealedFromTypes(module, targetAssemblyPath, typeNames);
+                    MakeTypesUnsealed(module, targetAssemblyPath, typeNames);
                 }
             }
 
-            // Add virtual to members.
-            if (AddVirtualTo != null)
+            // Make members virtual.
+            if (MakeVirtual != null)
             {
-                foreach (ITaskItem item in AddVirtualTo.Where(x => x.ItemSpec == target))
+                foreach (ITaskItem item in MakeVirtual.Where(x => x.ItemSpec == target))
                 {
                     string memberNames = item.GetMetadata("MemberNames");
-                    AddVirtualToMembers(module, targetAssemblyPath, memberNames);
+                    MakeMembersVirtual(module, targetAssemblyPath, memberNames);
                 }
             }
 
@@ -123,7 +123,7 @@ public class PatcherTask : Task
         Log.LogMessage(MessageImportance.Normal, $"Added 'InternalsVisibleToAttribute' for '{assemblyName}' in '{targetAssemblyPath}'");
     }
 
-    private void RemoveSealedFromTypes(ModuleDefMD module, string targetAssemblyPath, string typeNames)
+    private void MakeTypesUnsealed(ModuleDefMD module, string targetAssemblyPath, string typeNames)
     {
         Func<string, bool> matches = CreateMatcher(typeNames);
         int count = 0;
@@ -141,7 +141,7 @@ public class PatcherTask : Task
             Log.LogMessage(MessageImportance.Normal, $"Removed 'sealed' from {count} types in '{targetAssemblyPath}' matching patterns: {typeNames}");
     }
 
-    private void AddVirtualToMembers(ModuleDefMD module, string targetAssemblyPath, string memberNames)
+    private void MakeMembersVirtual(ModuleDefMD module, string targetAssemblyPath, string memberNames)
     {
         Func<string, bool> matches = CreateMatcher(memberNames);
         int count = 0;
